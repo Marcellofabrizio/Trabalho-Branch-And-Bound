@@ -1,5 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <queue>
+#include <iostream>
+
+using namespace std;
 
 #define TAM 45
 
@@ -8,120 +13,132 @@ float valor[TAM] = {92, 57, 49, 68, 60, 43, 67, 84, 87, 72, 92, 57, 49, 68, 60, 
 float vprop[TAM];
 
 float capacidade = 800;
+float node_count = 0;
 
 struct nodo
 {
-   int solucao;
-   int nivel;
-   float upbound;
-   struct nodo *prox;
+    int solucao;
+    int nivel;
+    float upbound;
+    struct nodo *prox;
+
+    //functor para comparação na pq
+    bool operator<(const nodo &rhs) const
+    {
+        return this->upbound < rhs.upbound;
+    }
 };
 typedef struct nodo tnodo;
 tnodo *inic = NULL, *fim = NULL;
 
 float vsol(long long solucao)
 {
-   int i;
-   float vaux = 0;
-   for (i = 0; i < TAM; i++)
-   {
-      if (solucao % 2 == 1)
-         vaux += valor[i];
-      solucao /= 2;
-   }
-   return vaux;
+    int i;
+    float vaux = 0;
+    for (i = 0; i < TAM; i++)
+    {
+        if (solucao % 2 == 1)
+            vaux += valor[i];
+        solucao /= 2;
+    }
+    return vaux;
 }
 
 float psol(long long solucao)
 {
-   int i;
-   float paux = 0;
-   for (i = 0; i < TAM; i++)
-   {
-      if (solucao % 2 == 1)
-         paux += peso[i];
-      solucao /= 2;
-   }
-   return paux;
+    int i;
+    float paux = 0;
+    for (i = 0; i < TAM; i++)
+    {
+        if (solucao % 2 == 1)
+            paux += peso[i];
+        solucao /= 2;
+    }
+    return paux;
 }
 
 float max(float vprop[TAM], int nivel)
 {
-   int i;
-   float maux = vprop[nivel + 1];
-   for (i = nivel + 2; i < TAM; i++)
-      if (vprop[i] > maux)
-         maux = vprop[i];
-   return maux;
+    int i;
+    float maux = vprop[nivel + 1];
+    for (i = nivel + 2; i < TAM; i++)
+        if (vprop[i] > maux)
+            maux = vprop[i];
+    return maux;
 }
 
-int cont = 0;
-
-void insere(long long solucao, int nivel)
+void insere(priority_queue<tnodo> &queue, long long solucao, int nivel)
 {
-   cont++;
-   tnodo *ptaux = (tnodo *)malloc(sizeof(tnodo));
-   ptaux->solucao = solucao;
-   ptaux->upbound = vsol(solucao) + (capacidade - psol(solucao)) * max(vprop, nivel);
-   ptaux->nivel = nivel;
-   ptaux->prox = NULL;
-   if (inic == NULL)
-      inic = fim = ptaux;
-   else
-   {
-      fim->prox = ptaux;
-      fim = ptaux;
-   }
+    node_count++;
+    tnodo node_aux;
+    node_aux.solucao = solucao;
+    node_aux.upbound = vsol(solucao) + (capacidade - psol(solucao)) * max(vprop, nivel);
+    node_aux.nivel = nivel;
+    // node_aux.prox = NULL;
+    // insere novo nodo na fila de prioridade e reordena os valores
+    queue.push(node_aux);
 }
 
+//#######################################################
+// Retira pode ser substituida por priority_queue::pop()
 int retira(long long *solucao, int *nivel, float *upbound)
 {
-   if (inic == NULL)
-      return 0;
-   *solucao = inic->solucao;
-   *nivel = inic->nivel;
-   *upbound = inic->upbound;
-   tnodo *ptaux = inic->prox;
-   free(inic);
-   inic = ptaux;
-   return 1;
+    if (inic == NULL)
+        return 0;
+    *solucao = inic->solucao;
+    *nivel = inic->nivel;
+    *upbound = inic->upbound;
+    tnodo *ptaux = inic->prox;
+    free(inic);
+    inic = ptaux;
+    return 1;
 }
+//#######################################################
 
 int main()
 {
-   int i;
-   for (i = 0; i < TAM; i++)
-      vprop[i] = valor[i] / peso[i];
-   insere(0, -1);
-   int nivel;
-   long long solucao;
-   float upbound;
-   float valotimo = 0;
-   int corte = 0;
-   while (retira(&solucao, &nivel, &upbound) != 0)
-   {
-      //printf("Retirei solucao %x nivel %d upbound=%f\n",solucao,nivel,upbound);
-      if (upbound < valotimo)
-      {
-         corte++;
-         continue;
-      }
-      if (vsol(solucao) > valotimo)
-      {
-         valotimo = vsol(solucao);
-         //      printf("Novo valor otimo=%f\n",valotimo);
-      }
-      if (nivel == TAM - 1)
-         continue;
-      int novasolucao = solucao + (1 << (nivel + 1));
-      if (psol(novasolucao) <= capacidade)
-      {
-         //      printf("Inseri solucao %x nivel %d\n",novasolucao,nivel+1);
-         insere(novasolucao, nivel + 1);
-      }
-      //   printf("Inseri solucao %x nivel %d\n",solucao,nivel+1);
-      insere(solucao, nivel + 1);
-   }
-   printf("Valor �timo final=%f cont=%d corte=%d\n", valotimo, cont, corte);
-   system("pause");
+
+    priority_queue<tnodo> queue;
+    tnodo node;
+
+    int i;
+    for (i = 0; i < TAM; i++)
+        vprop[i] = valor[i] / peso[i];
+
+    insere(queue, 0, -1);
+    int nivel;
+    long long solucao;
+    float upbound;
+    float valotimo = 0;
+    int corte = 0;
+
+    // retira(&solucao, &nivel, &upbound) != 0 substituida por priority_queue::pop()
+    while (queue.empty() == false)
+    {
+        node = queue.top();
+        queue.pop();
+        printf("Retirei solucao %x nivel %d upbound=%f\n", node.solucao, node.nivel, node.upbound);
+        if (node.upbound < valotimo)
+        {
+            corte++;
+            continue;
+        }
+        if (vsol(node.solucao) > valotimo)
+        {
+            valotimo = vsol(node.solucao);
+            printf("Novo valor otimo=%f\n", valotimo);
+        }
+        if (node.nivel == TAM - 1)
+            continue;
+
+        int novasolucao = node.solucao + (1 << (node.nivel + 1));
+        if (psol(novasolucao) <= capacidade)
+        {
+            printf("Inseri solucao %x nivel %d\n", novasolucao, node.nivel + 1);
+            insere(queue, novasolucao, node.nivel + 1);
+        }
+        printf("Inseri solucao %x nivel %d\n", node.solucao, node.nivel + 1);
+        insere(queue, node.solucao, node.nivel + 1);
+    }
+    printf("Valor otimo final=%f cont=%d corte=%d\n", valotimo, node_count, corte);
 }
