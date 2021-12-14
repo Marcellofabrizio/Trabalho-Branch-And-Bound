@@ -13,7 +13,7 @@ float valor[TAM] = {92, 57, 49, 68, 60, 43, 67, 84, 87, 72, 92, 57, 49, 68, 60, 
 float vprop[TAM];
 
 float capacidade = 800;
-float node_count = 0;
+double node_count = 0;
 
 struct nodo
 {
@@ -109,7 +109,7 @@ int main()
    int nivel;
    long long solucao;
    float upbound;
-   float best_value = 0;
+   double best_value = 0;
    int corte = 0;
 
    clock_t start, end;
@@ -121,7 +121,6 @@ int main()
    {
       node = queue.top();
       queue.pop();
-      printf("Retirei solucao %x nivel %d upbound=%f\n", node.solucao, node.nivel, node.upbound);
       if (node.upbound < best_value)
       {
          corte++;
@@ -130,7 +129,7 @@ int main()
       if (vsol(node.solucao) > best_value)
       {
          best_value = vsol(node.solucao);
-         printf("Novo valor otimo=%f\n", best_value);
+         cout << "Novo valor otimo: " << best_value << endl;
       }
       if (node.nivel == TAM - 1)
          continue;
